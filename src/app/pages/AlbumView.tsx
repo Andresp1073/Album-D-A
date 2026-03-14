@@ -161,7 +161,7 @@ export default function AlbumView() {
         (data || []).map(async (item) => {
           const { data: { signedUrl } } = await supabase.storage
             .from('media')
-            .createSignedUrl(item.path, 3600);
+            .createSignedUrl(item.path, 31536000);
           
           return {
             id: item.id,

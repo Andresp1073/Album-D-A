@@ -91,7 +91,7 @@ export default function Dashboard() {
         .from('albums')
         .select('*')
         .eq('deleted', false)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
 
       if (albumsError) throw albumsError;
 
@@ -99,7 +99,7 @@ export default function Dashboard() {
         .from('media')
         .select('*')
         .eq('deleted', false)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
 
       if (mediaError) throw mediaError;
 
@@ -107,7 +107,7 @@ export default function Dashboard() {
         (mediaData || []).map(async (item) => {
           const { data: { signedUrl } } = await supabase.storage
             .from('media')
-            .createSignedUrl(item.path, 3600);
+            .createSignedUrl(item.path, 31536000);
           
           return {
             id: item.id,
@@ -129,12 +129,13 @@ export default function Dashboard() {
       const albumsWithCovers = await Promise.all(
         (albumsData || []).map(async (album) => {
           const albumMedia = mediaWithUrls.filter(m => m.albumId === album.id);
-          const coverUrl = albumMedia.length > 0 ? albumMedia[0].url : null;
+          const firstMedia = albumMedia.length > 0 ? albumMedia[0] : null;
           return {
             id: album.id,
             name: album.name,
             description: album.description || '',
-            coverUrl,
+            coverUrl: firstMedia?.url || null,
+            coverType: firstMedia?.type || null,
             createdAt: album.created_at,
             updatedAt: album.updated_at,
             createdBy: album.created_by,
@@ -350,14 +351,25 @@ export default function Dashboard() {
               </Button>
             </motion.div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 gap-3">
               {albums.map((album, index) => (
                 <motion.div key={album.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}>
                   <div className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100">
                     <Link to={`/album/${album.id}`}>
-                      <div className="aspect-square bg-gradient-to-br from-rose-100 to-pink-100 flex items-center justify-center overflow-hidden">
+                      <div className="aspect-square bg-gradient-to-br from-rose-100 to-pink-100 flex items-center justify-center overflow-hidden relative">
                         {album.coverUrl ? (
-                          <img src={album.coverUrl} alt={album.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                          album.coverType?.startsWith('video/') ? (
+                            <video 
+                              src={album.coverUrl} 
+                              className="w-full h-full object-cover" 
+                              muted 
+                              loop 
+                              playsInline
+                              autoPlay
+                            />
+                          ) : (
+                            <img src={album.coverUrl} alt={album.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                          )
                         ) : (
                           <ImageIcon className="w-16 h-16 text-rose-300" />
                         )}

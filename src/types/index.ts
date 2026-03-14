@@ -3,6 +3,7 @@ export interface Album {
   name: string;
   description: string;
   coverUrl: string | null;
+  coverType: string | null;
   createdAt: string;
   updatedAt: string;
   createdBy: string;
