@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router";
 import { Plus, Image as ImageIcon, MoreVertical, Edit, Trash2, Grid, Folder, X, ChevronLeft, ChevronRight, Play } from "lucide-react";
 import { Button } from "../components/ui/button";
@@ -13,8 +13,10 @@ import { Album, Media } from "../../types";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 
-function FullscreenViewer({ media, initialIndex, onClose }: { media: Media[]; initialIndex: number; onClose: () => void }) {
+function FullscreenViewer({ media, initialIndex, onClose, onDelete }: { media: Media[]; initialIndex: number; onClose: () => void; onDelete: (media: Media) => void }) {
   const [index, setIndex] = useState(initialIndex);
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -23,8 +25,31 @@ function FullscreenViewer({ media, initialIndex, onClose }: { media: Media[]; in
       else if (e.key === "ArrowRight") setIndex(i => i < media.length - 1 ? i + 1 : 0);
     };
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "auto";
+    };
   }, [media.length, onClose]);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+  
+  const handleTouchEnd = () => {
+    const diff = touchStartX.current - touchEndX.current;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) {
+        setIndex(i => i < media.length - 1 ? i + 1 : 0);
+      } else {
+        setIndex(i => i > 0 ? i - 1 : media.length - 1);
+      }
+    }
+  };
 
   const current = media[index];
   const isVideo = current?.type.startsWith("video/");
@@ -36,29 +61,37 @@ function FullscreenViewer({ media, initialIndex, onClose }: { media: Media[]; in
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 bg-black flex items-center justify-center"
       onClick={onClose}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     >
-      <Button variant="ghost" size="sm" className="absolute top-4 right-4 z-10 text-white hover:bg-white/10" onClick={onClose}>
+      <Button variant="ghost" size="sm" className="absolute top-4 right-4 z-20 text-white hover:bg-white/10" onClick={onClose}>
         <X className="w-6 h-6" />
       </Button>
-      <div className="absolute top-4 left-4 z-10 text-white font-medium bg-black/50 px-3 py-1 rounded-full text-sm">
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 text-white font-medium bg-black/50 px-3 py-1 rounded-full text-sm">
         {index + 1} / {media.length}
       </div>
       {media.length > 1 && (
         <>
-          <Button variant="ghost" className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/10 h-12 w-12 rounded-full" onClick={(e) => { e.stopPropagation(); setIndex(i => i > 0 ? i - 1 : media.length - 1); }}>
+          <Button variant="ghost" className="absolute left-2 top-1/2 -translate-y-1/2 text-white hover:bg-white/10 h-12 w-12 rounded-full hidden md:flex" onClick={(e) => { e.stopPropagation(); setIndex(i => i > 0 ? i - 1 : media.length - 1); }}>
             <ChevronLeft className="w-8 h-8" />
           </Button>
-          <Button variant="ghost" className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/10 h-12 w-12 rounded-full" onClick={(e) => { e.stopPropagation(); setIndex(i => i < media.length - 1 ? i + 1 : 0); }}>
+          <Button variant="ghost" className="absolute right-2 top-1/2 -translate-y-1/2 text-white hover:bg-white/10 h-12 w-12 rounded-full hidden md:flex" onClick={(e) => { e.stopPropagation(); setIndex(i => i < media.length - 1 ? i + 1 : 0); }}>
             <ChevronRight className="w-8 h-8" />
           </Button>
         </>
       )}
-      <div className="max-w-full max-h-full p-4" onClick={(e) => e.stopPropagation()}>
+      <div className="max-w-full max-h-full p-0 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
         {isVideo ? (
-          <video src={current.url} controls autoPlay className="max-w-full max-h-[90vh] rounded-lg" />
+          <video src={current.url} controls autoPlay className="max-w-full max-h-[90vh] object-contain" />
         ) : (
-          <img src={current.url} alt={current.name} className="max-w-full max-h-[90vh] object-contain rounded-lg" />
+          <img src={current.url} alt={current.name} className="max-w-full max-h-[90vh] object-contain" />
         )}
+      </div>
+      <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex gap-4">
+        <button onClick={(e) => { e.stopPropagation(); onDelete(current); }} className="p-3 bg-red-600 hover:bg-red-700 rounded-full text-white">
+          <Trash2 className="w-6 h-6" />
+        </button>
       </div>
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white text-center bg-black/50 px-4 py-2 rounded-full text-sm max-w-md truncate">
         {current.name}
@@ -75,11 +108,30 @@ export default function Dashboard() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteMediaDialogOpen, setDeleteMediaDialogOpen] = useState(false);
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
+  const [selectedMedia, setSelectedMedia] = useState<Media | null>(null);
   const [formData, setFormData] = useState({ name: "", description: "" });
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
+
+  const handleDeleteMedia = async () => {
+    if (!selectedMedia) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No user');
+      const { error } = await supabase.from('media').update({ deleted: true, deleted_at: new Date().toISOString(), deleted_by: user.id }).eq('id', selectedMedia.id);
+      if (error) throw error;
+      toast.success("Foto movida a la papelera");
+      setDeleteMediaDialogOpen(false);
+      setSelectedMedia(null);
+      loadData();
+    } catch (error) {
+      console.error("Error deleting media:", error);
+      toast.error("Error al eliminar la foto");
+    }
+  };
 
   useEffect(() => {
     loadData();
@@ -244,7 +296,7 @@ export default function Dashboard() {
     <div className="space-y-6">
       <AnimatePresence>
         {viewerOpen && (
-          <FullscreenViewer media={allMedia} initialIndex={viewerIndex} onClose={() => setViewerOpen(false)} />
+          <FullscreenViewer media={allMedia} initialIndex={viewerIndex} onClose={() => setViewerOpen(false)} onDelete={(media) => { setSelectedMedia(media); setDeleteMediaDialogOpen(true); }} />
         )}
       </AnimatePresence>
 
@@ -438,6 +490,19 @@ export default function Dashboard() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteAlbum} className="bg-red-600 hover:bg-red-700">Mover a papelera</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={deleteMediaDialogOpen} onOpenChange={setDeleteMediaDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Mover a la papelera?</AlertDialogTitle>
+            <AlertDialogDescription>La foto "{selectedMedia?.name}" se moverá a la papelera.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteMedia} className="bg-red-600 hover:bg-red-700">Mover a papelera</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
