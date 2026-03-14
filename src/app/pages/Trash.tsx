@@ -363,7 +363,7 @@ export default function Trash() {
               <h2 className="text-xl font-semibold text-gray-800">
                 Fotos y videos ({media.length})
               </h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
+              <div className="grid grid-cols-3 gap-1">
                 {media.map((item, index) => {
                   const isVideo = item.type.startsWith("video/");
                   return (

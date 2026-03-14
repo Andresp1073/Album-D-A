@@ -364,7 +364,7 @@ export default function AlbumView() {
           </Button>
         </motion.div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-1 sm:gap-2">
+        <div className="grid grid-cols-3 gap-1">
           {media.map((item, index) => {
             const isVideo = item.type.startsWith("video/");
             return (
