@@ -135,8 +135,6 @@ function FullscreenViewer({ media, initialIndex, onClose, onDelete, onIndexChang
           </div>
         )}
       </div>
-        )}
-      </div>
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 text-white font-medium bg-black/50 px-3 py-1 rounded-full text-sm">
         {index + 1} / {media.length}
       </div>
