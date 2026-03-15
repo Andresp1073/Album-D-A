@@ -27,8 +27,10 @@ const setCachedMedia = (media: Media[]) => {
   }
 };
 
-function FullscreenViewer({ media, initialIndex, onClose }: { media: Media[]; initialIndex: number; onClose: () => void }) {
+function FullscreenViewer({ media, initialIndex, onClose, onDelete }: { media: Media[]; initialIndex: number; onClose: () => void; onDelete: (media: Media) => void }) {
   const [index, setIndex] = useState(initialIndex);
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -44,6 +46,25 @@ function FullscreenViewer({ media, initialIndex, onClose }: { media: Media[]; in
     };
   }, [media.length, onClose]);
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+  
+  const handleTouchEnd = () => {
+    const diff = touchStartX.current - touchEndX.current;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) {
+        setIndex(i => i < media.length - 1 ? i + 1 : 0);
+      } else {
+        setIndex(i => i > 0 ? i - 1 : media.length - 1);
+      }
+    }
+  };
+
   const current = media[index];
   const isVideo = current?.type.startsWith("video/");
 
@@ -54,6 +75,9 @@ function FullscreenViewer({ media, initialIndex, onClose }: { media: Media[]; in
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 bg-black flex items-center justify-center"
       onClick={onClose}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     >
       {/* Close button */}
       <button onClick={onClose} className="absolute top-4 right-4 z-20 p-2 text-white/80 hover:text-white transition-colors">
@@ -65,18 +89,18 @@ function FullscreenViewer({ media, initialIndex, onClose }: { media: Media[]; in
         {index + 1} / {media.length}
       </div>
 
-      {/* Navigation */}
+      {/* Navigation arrows - hide on mobile */}
       {media.length > 1 && (
         <>
           <button 
             onClick={(e) => { e.stopPropagation(); setIndex(i => i > 0 ? i - 1 : media.length - 1); }}
-            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-3 text-white/70 hover:text-white transition-colors bg-black/20 hover:bg-black/40 rounded-full"
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-3 text-white/70 hover:text-white transition-colors bg-black/20 hover:bg-black/40 rounded-full hidden md:flex"
           >
             <ChevronLeft className="w-8 h-8" />
           </button>
           <button 
             onClick={(e) => { e.stopPropagation(); setIndex(i => i < media.length - 1 ? i + 1 : 0); }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-3 text-white/70 hover:text-white transition-colors bg-black/20 hover:bg-black/40 rounded-full"
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-3 text-white/70 hover:text-white transition-colors bg-black/20 hover:bg-black/40 rounded-full hidden md:flex"
           >
             <ChevronRight className="w-8 h-8" />
           </button>
@@ -85,36 +109,27 @@ function FullscreenViewer({ media, initialIndex, onClose }: { media: Media[]; in
 
       {/* Media */}
       <div className="max-w-full max-h-full p-0 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-        <motion.div
-          key={current.id}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.2 }}
-          className="flex items-center justify-center"
-        >
-          {isVideo ? (
-            <video
-              src={current.url}
-              controls
-              autoPlay
-              className="max-w-[100vw] max-h-[100vh] object-contain"
-            />
-          ) : (
-            <img
-              src={current.url}
-              alt={current.name}
-              className="max-w-[100vw] max-h-[100vh] object-contain"
-            />
-          )}
-        </motion.div>
+        {isVideo ? (
+          <video src={current.url} controls autoPlay className="max-w-full max-h-[90vh] object-contain" />
+        ) : (
+          <img src={current.url} alt={current.name} className="max-w-full max-h-[90vh] object-contain" />
+        )}
       </div>
 
-      {/* Info */}
-      {current.name && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 text-white text-center bg-black/30 backdrop-blur-sm px-4 py-2 rounded-full text-sm max-w-[90vw] truncate">
-          {current.name}
-        </div>
-      )}
+      {/* Delete button */}
+      <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-20">
+        <button 
+          onClick={(e) => { e.stopPropagation(); onDelete(current); }} 
+          className="p-3 bg-red-600 hover:bg-red-700 rounded-full text-white flex items-center gap-2"
+        >
+          <Trash2 className="w-6 h-6" />
+        </button>
+      </div>
+
+      {/* Name */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white text-center bg-black/30 backdrop-blur-sm px-4 py-2 rounded-full text-sm max-w-md truncate">
+        {current.name}
+      </div>
     </motion.div>
   );
 }
@@ -322,7 +337,7 @@ export default function AlbumView() {
     <div className="space-y-6">
       <AnimatePresence>
         {viewerOpen && media.length > 0 && (
-          <FullscreenViewer media={media} initialIndex={viewerIndex} onClose={() => setViewerOpen(false)} />
+          <FullscreenViewer media={media} initialIndex={viewerIndex} onClose={() => setViewerOpen(false)} onDelete={(media) => { setSelectedMedia(media); setDeleteDialogOpen(true); }} />
         )}
       </AnimatePresence>
 
