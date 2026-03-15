@@ -7,6 +7,7 @@ import { supabase } from "../../lib/supabase";
 import { Album, Media } from "../../types";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
+import { useIsMobile } from "../components/ui/use-mobile";
 
 const MEDIA_CACHE_KEY = 'gallery_media_cache';
 
@@ -146,6 +147,7 @@ function FullscreenViewer({ media, initialIndex, onClose, onDelete, onIndexChang
 
 export default function AlbumView() {
   const { id } = useParams();
+  const isMobile = useIsMobile();
   const [album, setAlbum] = useState<Album | null>(null);
   const [media, setMedia] = useState<Media[]>([]);
   const [loading, setLoading] = useState(true);
@@ -416,12 +418,16 @@ export default function AlbumView() {
         <div className="grid grid-cols-3 gap-1">
           {media.map((item, index) => {
             const isVideo = item.type.startsWith("video/");
+            const Wrapper = isMobile ? 'div' : motion.div;
+            const wrapperProps = isMobile ? {} : {
+              initial: { opacity: 0, scale: 0.9 },
+              animate: { opacity: 1, scale: 1 },
+              transition: { delay: Math.min(index * 0.02, 0.5) }
+            };
             return (
-              <motion.div
+              <Wrapper
                 key={item.id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.02 }}
+                {...wrapperProps}
                 className="group relative aspect-square bg-gray-100 overflow-hidden cursor-pointer"
                 onClick={() => { setViewerIndex(index); setViewerOpen(true); }}
               >
@@ -430,11 +436,10 @@ export default function AlbumView() {
                     <video
                       src={item.url}
                       className="w-full h-full object-cover"
+                      playsInline
                       muted
-                      onMouseOver={(e) => e.currentTarget.play()}
-                      onMouseOut={(e) => { e.currentTarget.pause(); e.currentTarget.currentTime = 0; }}
                     />
-                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute inset-0 flex items-center justify-center">
                       <Play className="w-12 h-12 text-white drop-shadow-lg" />
                     </div>
                   </div>
@@ -442,12 +447,13 @@ export default function AlbumView() {
                   <img
                     src={item.url}
                     alt={item.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    loading="lazy"
+                    className="w-full h-full object-cover"
                   />
                 )}
 
                 {/* Delete button on hover */}
-                <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity z-10 md:opacity-0">
                   <Button
                     variant="destructive"
                     size="sm"
@@ -461,7 +467,7 @@ export default function AlbumView() {
                     <Trash2 className="w-5 h-5" />
                   </Button>
                 </div>
-              </motion.div>
+              </Wrapper>
             );
           })}
         </div>

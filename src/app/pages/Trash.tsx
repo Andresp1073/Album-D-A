@@ -6,6 +6,7 @@ import { supabase } from "../../lib/supabase";
 import { Album, Media } from "../../types";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
+import { useIsMobile } from "../components/ui/use-mobile";
 
 function FullscreenViewer({ media, initialIndex, onClose }: { media: Media[]; initialIndex: number; onClose: () => void }) {
   const [index, setIndex] = useState(initialIndex);
@@ -91,6 +92,7 @@ function FullscreenViewer({ media, initialIndex, onClose }: { media: Media[]; in
 }
 
 export default function Trash() {
+  const isMobile = useIsMobile();
   const [albums, setAlbums] = useState<Album[]>([]);
   const [media, setMedia] = useState<Media[]>([]);
   const [loading, setLoading] = useState(true);
@@ -469,12 +471,16 @@ export default function Trash() {
               <div className="grid grid-cols-3 gap-1">
                 {media.map((item, index) => {
                   const isVideo = item.type.startsWith("video/");
+                  const Wrapper = isMobile ? 'div' : motion.div;
+                  const wrapperProps = isMobile ? {} : {
+                    initial: { opacity: 0, scale: 0.9 },
+                    animate: { opacity: 1, scale: 1 },
+                    transition: { delay: Math.min(index * 0.02, 0.5) }
+                  };
                   return (
-                    <motion.div
+                    <Wrapper
                       key={item.id}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: index * 0.02 }}
+                      {...wrapperProps}
                       className="group relative aspect-square bg-gray-100 rounded-lg overflow-hidden cursor-pointer"
                       onClick={() => { setViewerIndex(index); setViewerOpen(true); }}
                     >
@@ -487,12 +493,13 @@ export default function Trash() {
                         <img
                           src={item.url}
                           alt={item.name}
+                          loading="lazy"
                           className="w-full h-full object-cover opacity-60"
                         />
                       )}
 
                       {/* Overlay with actions */}
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-2">
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity flex items-center justify-center gap-2 p-2 md:opacity-0">
                         <Button
                           size="sm"
                           onClick={(e) => { e.stopPropagation(); openRestoreDialog("media", item.id, item.albumId, item.name); }}
@@ -509,7 +516,7 @@ export default function Trash() {
                           <Trash2 className="w-3 h-3" />
                         </Button>
                       </div>
-                    </motion.div>
+                    </Wrapper>
                   );
                 })}
               </div>
