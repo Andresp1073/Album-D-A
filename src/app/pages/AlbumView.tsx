@@ -114,7 +114,7 @@ function FullscreenViewer({ media, initialIndex, onClose, onDelete, onIndexChang
       
       {/* Menu button */}
       <div className="absolute top-4 right-14 z-20">
-        <button onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); }} className="p-2 text-white/80 hover:text-white transition-colors">
+        <button onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); }} onTouchStart={(e) => e.stopPropagation()} className="p-2 text-white/80 hover:text-white transition-colors">
           <MoreVertical className="w-6 h-6" />
         </button>
         {menuOpen && (
