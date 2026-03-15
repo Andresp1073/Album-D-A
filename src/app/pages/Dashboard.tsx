@@ -200,8 +200,10 @@ export default function Dashboard() {
       setAlbums(cachedAlbums);
     }
     
-    if (cachedMedia.length > 0 || cachedAlbums.length > 0) {
-      setLoading(false);
+    setLoading(false);
+    
+    if (cachedMedia.length > 0 && cachedAlbums.length > 0) {
+      return;
     }
     
     try {
@@ -232,22 +234,17 @@ export default function Dashboard() {
         return { id: album.id, name: album.name, description: album.description || '', coverUrl: firstMedia?.url || null, coverType: firstMedia?.type || null, createdAt: album.created_at, updatedAt: album.updated_at, createdBy: album.created_by, deleted: album.deleted };
       });
 
-      const mediaChanged = JSON.stringify(newMedia) !== JSON.stringify(cachedMedia);
-      const albumsChanged = JSON.stringify(albumsWithCovers) !== JSON.stringify(cachedAlbums);
-      
-      if (mediaChanged) {
+      if (newMedia.length > 0) {
         setAllMedia(newMedia);
         setCachedMedia(newMedia);
       }
       
-      if (albumsChanged) {
+      if (albumsWithCovers.length > 0) {
         setAlbums(albumsWithCovers);
         setCachedAlbums(albumsWithCovers);
       }
     } catch (error) {
       console.error("Error loading data:", error);
-    } finally {
-      setLoading(false);
     }
   };
 

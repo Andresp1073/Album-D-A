@@ -27,7 +27,7 @@ export default function Login() {
 
     try {
       await signIn(email, password);
-      toast.success("¡Bienvenido! ❤️");
+      toast.success("Bienvenido/a ❤️");
       navigate("/", { replace: true });
     } catch (error: any) {
       console.error("Login error:", error);

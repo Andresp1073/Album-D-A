@@ -10,10 +10,20 @@ import { toast } from "sonner";
 import { useIsMobile } from "../components/ui/use-mobile";
 
 const MEDIA_CACHE_KEY = 'gallery_media_cache';
+const ALBUMS_CACHE_KEY = 'gallery_albums_cache';
 
 const getCachedMedia = (): Media[] => {
   try {
     const cached = localStorage.getItem(MEDIA_CACHE_KEY);
+    return cached ? JSON.parse(cached) : [];
+  } catch {
+    return [];
+  }
+};
+
+const getCachedAlbums = (): Album[] => {
+  try {
+    const cached = localStorage.getItem(ALBUMS_CACHE_KEY);
     return cached ? JSON.parse(cached) : [];
   } catch {
     return [];
@@ -166,6 +176,14 @@ export default function AlbumView() {
   }, [id]);
 
   const loadAlbum = async () => {
+    const cachedAlbums = getCachedAlbums();
+    const cachedAlbum = cachedAlbums.find(a => a.id === id);
+    
+    if (cachedAlbum) {
+      setAlbum(cachedAlbum);
+      setLoading(false);
+    }
+    
     try {
       const { data, error } = await supabase
         .from('albums')
@@ -176,7 +194,7 @@ export default function AlbumView() {
       if (error) throw error;
       
       if (data) {
-        setAlbum({
+        const albumData = {
           id: data.id,
           name: data.name,
           description: data.description || '',
@@ -185,7 +203,8 @@ export default function AlbumView() {
           updatedAt: data.updated_at,
           createdBy: data.created_by,
           deleted: data.deleted
-        });
+        };
+        setAlbum(albumData);
       }
     } catch (error) {
       console.error("Error loading album:", error);
@@ -200,6 +219,7 @@ export default function AlbumView() {
     
     if (albumCachedMedia.length > 0) {
       setMedia(albumCachedMedia);
+      return;
     }
     
     try {
