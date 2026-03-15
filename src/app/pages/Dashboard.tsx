@@ -178,6 +178,7 @@ export default function Dashboard() {
       toast.success("Foto movida a la papelera");
       setDeleteMediaDialogOpen(false);
       setSelectedMedia(null);
+      localStorage.removeItem('gallery_media_cache');
       loadData();
     } catch (error) {
       console.error("Error deleting media:", error);
@@ -331,7 +332,10 @@ export default function Dashboard() {
   };
 
   const handleDeleteAlbum = async () => {
-    if (!selectedAlbum) return;
+    if (!selectedAlbum) {
+      console.error("No album selected");
+      return;
+    }
 
     try {
       console.log("Deleting album:", selectedAlbum.id);
@@ -349,6 +353,9 @@ export default function Dashboard() {
       toast.success("Álbum movido a la papelera");
       setDeleteDialogOpen(false);
       setSelectedAlbum(null);
+      
+      localStorage.removeItem('gallery_albums_cache');
+      localStorage.removeItem('gallery_media_cache');
       loadData();
     } catch (error) {
       console.error("Error deleting album:", error);
