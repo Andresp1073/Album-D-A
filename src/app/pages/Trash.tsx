@@ -7,6 +7,7 @@ import { Album, Media } from "../../types";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { useIsMobile } from "../components/ui/use-mobile";
+import { getCachedImage, cacheImagesInBackground } from "../../lib/offline-cache";
 
 function FullscreenViewer({ media, initialIndex, onClose }: { media: Media[]; initialIndex: number; onClose: () => void }) {
   const [index, setIndex] = useState(initialIndex);
@@ -141,24 +142,63 @@ export default function Trash() {
 
       const mediaWithUrls = await Promise.all(
         (mediaData || []).map(async (item) => {
-          const { data: { signedUrl } } = await supabase.storage
-            .from('media')
-            .createSignedUrl(item.path, 31536000);
+          const offlineUrl = await getCachedImage(item.id);
+          if (offlineUrl) {
+            return {
+              id: item.id,
+              albumId: item.album_id,
+              path: item.path,
+              name: item.name,
+              type: item.type,
+              size: item.size,
+              createdAt: item.created_at,
+              createdBy: item.created_by,
+              deleted: item.deleted,
+              deletedAt: item.deleted_at,
+              deletedBy: item.deleted_by,
+              url: offlineUrl
+            };
+          }
           
-          return {
-            id: item.id,
-            albumId: item.album_id,
-            path: item.path,
-            name: item.name,
-            type: item.type,
-            size: item.size,
-            createdAt: item.created_at,
-            createdBy: item.created_by,
-            deleted: item.deleted,
-            deletedAt: item.deleted_at,
-            deletedBy: item.deleted_by,
-            url: signedUrl || ''
-          };
+          try {
+            const { data: { signedUrl } } = await supabase.storage
+              .from('media')
+              .createSignedUrl(item.path, 31536000);
+            
+            if (signedUrl) {
+              cacheImagesInBackground([{ id: item.id, url: signedUrl }]);
+            }
+            
+            return {
+              id: item.id,
+              albumId: item.album_id,
+              path: item.path,
+              name: item.name,
+              type: item.type,
+              size: item.size,
+              createdAt: item.created_at,
+              createdBy: item.created_by,
+              deleted: item.deleted,
+              deletedAt: item.deleted_at,
+              deletedBy: item.deleted_by,
+              url: signedUrl || ''
+            };
+          } catch {
+            return {
+              id: item.id,
+              albumId: item.album_id,
+              path: item.path,
+              name: item.name,
+              type: item.type,
+              size: item.size,
+              createdAt: item.created_at,
+              createdBy: item.created_by,
+              deleted: item.deleted,
+              deletedAt: item.deleted_at,
+              deletedBy: item.deleted_by,
+              url: ''
+            };
+          }
         })
       );
 
