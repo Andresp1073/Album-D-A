@@ -8,6 +8,7 @@ import { Album, Media } from "../../types";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { useIsMobile } from "../components/ui/use-mobile";
+import { getCachedImage, cacheImagesInBackground } from "../../lib/offline-cache";
 
 const MEDIA_CACHE_KEY = 'gallery_media_cache';
 const ALBUMS_CACHE_KEY = 'gallery_albums_cache';
@@ -218,7 +219,17 @@ export default function AlbumView() {
     const albumCachedMedia = cachedMedia.filter(m => m.albumId === id);
     
     if (albumCachedMedia.length > 0) {
-      setMedia(albumCachedMedia);
+      const mediaWithOffline = await Promise.all(
+        albumCachedMedia.map(async (item) => {
+          const offlineUrl = await getCachedImage(item.id);
+          if (offlineUrl) {
+            return { ...item, url: offlineUrl };
+          }
+          return item;
+        })
+      );
+      setMedia(mediaWithOffline);
+      cacheImagesInBackground(albumCachedMedia.map(m => ({ id: m.id, url: m.url })));
       return;
     }
     
@@ -235,22 +246,34 @@ export default function AlbumView() {
       const newMedia: Media[] = [];
       for (const item of (data || [])) {
         const cached = albumCachedMedia.find(m => m.id === item.id);
-        if (cached?.url) {
-          newMedia.push(cached);
-        } else {
+        let url = cached?.url || '';
+        
+        if (!url) {
           try {
             const { data: { signedUrl } } = await supabase.storage.from('media').createSignedUrl(item.path, 31536000);
-            newMedia.push({ id: item.id, albumId: item.album_id, path: item.path, name: item.name, type: item.type, size: item.size, createdAt: item.created_at, createdBy: item.created_by, deleted: item.deleted, url: signedUrl || '' });
+            url = signedUrl || '';
           } catch {
-            newMedia.push({ id: item.id, albumId: item.album_id, path: item.path, name: item.name, type: item.type, size: item.size, createdAt: item.created_at, createdBy: item.created_by, deleted: item.deleted, url: '' });
+            url = '';
           }
         }
+        
+        const offlineUrl = await getCachedImage(item.id);
+        if (offlineUrl) {
+          url = offlineUrl;
+        }
+        
+        newMedia.push({ id: item.id, albumId: item.album_id, path: item.path, name: item.name, type: item.type, size: item.size, createdAt: item.created_at, createdBy: item.created_by, deleted: item.deleted, url });
       }
 
       setMedia(newMedia);
       
+      const urlsOnly = newMedia.filter(m => m.url && !m.url.startsWith('blob:'));
+      if (urlsOnly.length > 0) {
+        cacheImagesInBackground(urlsOnly.map(m => ({ id: m.id, url: m.url })));
+      }
+      
       const allCached = getCachedMedia();
-      const updatedCache = [...allCached.filter(m => m.albumId !== id), ...newMedia];
+      const updatedCache = [...allCached.filter(m => m.albumId !== id), ...newMedia.map(m => ({ ...m, url: m.url.startsWith('blob:') ? '' : m.url }))];
       setCachedMedia(updatedCache);
     } catch (error) {
       console.error("Error loading media:", error);
