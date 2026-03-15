@@ -198,7 +198,6 @@ export default function AlbumView() {
     
     if (albumCachedMedia.length > 0) {
       setMedia(albumCachedMedia);
-      setLoading(false);
     }
     
     try {
@@ -453,18 +452,18 @@ export default function AlbumView() {
                 )}
 
                 {/* Delete button on hover */}
-                <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity z-10 md:opacity-0">
+                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity z-10 md:opacity-0">
                   <Button
                     variant="destructive"
                     size="sm"
-                    className="h-10 w-10 p-0 rounded-full"
+                    className="h-8 w-8 p-0 bg-red-500/80 hover:bg-red-600"
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedMedia(item);
                       setDeleteDialogOpen(true);
                     }}
                   >
-                    <Trash2 className="w-5 h-5" />
+                    <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
               </Wrapper>
