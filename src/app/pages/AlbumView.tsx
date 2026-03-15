@@ -353,6 +353,7 @@ export default function AlbumView() {
       toast.success("Foto movida a la papelera");
       setDeleteDialogOpen(false);
       setSelectedMedia(null);
+      setViewerOpen(false);
       localStorage.removeItem('gallery_media_cache');
       loadMedia();
     } catch (error) {

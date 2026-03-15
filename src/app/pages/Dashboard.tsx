@@ -186,6 +186,7 @@ export default function Dashboard() {
       toast.success("Foto movida a la papelera");
       setDeleteMediaDialogOpen(false);
       setSelectedMedia(null);
+      setViewerOpen(false);
       localStorage.removeItem('gallery_media_cache');
       loadData();
     } catch (error) {
