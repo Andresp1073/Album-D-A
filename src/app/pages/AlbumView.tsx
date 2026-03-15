@@ -160,8 +160,8 @@ export default function AlbumView() {
 
   useEffect(() => {
     if (id) {
-      loadAlbum();
-      loadMedia();
+      setLoading(true);
+      Promise.all([loadAlbum(), loadMedia()]);
     }
   }, [id]);
 
