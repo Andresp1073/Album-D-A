@@ -452,7 +452,7 @@ export default function AlbumView() {
                 )}
 
                 {/* Delete button on hover */}
-                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity z-10 md:opacity-0">
+                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                   <Button
                     variant="destructive"
                     size="sm"
