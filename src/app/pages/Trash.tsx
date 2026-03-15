@@ -9,8 +9,9 @@ import { toast } from "sonner";
 import { useIsMobile } from "../components/ui/use-mobile";
 import { getCachedImage, cacheImagesInBackground } from "../../lib/offline-cache";
 
-function FullscreenViewer({ media, initialIndex, onClose }: { media: Media[]; initialIndex: number; onClose: () => void }) {
+function FullscreenViewer({ media, initialIndex, onClose, onRestore, onDelete }: { media: Media[]; initialIndex: number; onClose: () => void; onRestore?: (media: Media) => void; onDelete?: (media: Media) => void }) {
   const [index, setIndex] = useState(initialIndex);
+  const [menuOpen, setMenuOpen] = useState(false);
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
 
@@ -88,6 +89,20 @@ function FullscreenViewer({ media, initialIndex, onClose }: { media: Media[]; in
           <img src={current.url} alt={current.name} className="max-w-full max-h-[90vh] object-contain" />
         )}
       </div>
+      {(onRestore || onDelete) && (
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-4 z-20">
+          {onRestore && (
+            <button onClick={(e) => { e.stopPropagation(); onRestore(current); }} className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-full flex items-center gap-2 font-medium">
+              <RotateCcw className="w-5 h-5" />Restaurar
+            </button>
+          )}
+          {onDelete && (
+            <button onClick={(e) => { e.stopPropagation(); onDelete(current); }} className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center gap-2 font-medium">
+              <Trash2 className="w-5 h-5" />Eliminar
+            </button>
+          )}
+        </div>
+      )}
     </motion.div>
   );
 }
@@ -384,7 +399,7 @@ export default function Trash() {
     <div className="space-y-6">
       <AnimatePresence>
         {viewerOpen && (
-          <FullscreenViewer media={media} initialIndex={viewerIndex} onClose={() => setViewerOpen(false)} />
+          <FullscreenViewer media={media} initialIndex={viewerIndex} onClose={() => setViewerOpen(false)} onRestore={(item) => { setSelectedItem({ type: 'media', id: item.id, albumId: item.albumId, name: item.name }); setRestoreItemDialogOpen(true); }} onDelete={(item) => { setSelectedItem({ type: 'media', id: item.id, albumId: item.albumId, name: item.name }); setDeleteItemDialogOpen(true); }} />
         )}
       </AnimatePresence>
 
