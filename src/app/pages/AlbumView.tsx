@@ -189,6 +189,8 @@ export default function AlbumView() {
       }
     } catch (error) {
       console.error("Error loading album:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -232,8 +234,6 @@ export default function AlbumView() {
       setCachedMedia(updatedCache);
     } catch (error) {
       console.error("Error loading media:", error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -321,7 +321,7 @@ export default function AlbumView() {
     );
   }
 
-  if (!album) {
+  if (!loading && !album) {
     return (
       <div className="text-center py-20">
         <p className="text-gray-600">Álbum no encontrado</p>
