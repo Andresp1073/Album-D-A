@@ -154,107 +154,59 @@ export default function Dashboard() {
   }, []);
 
   const loadData = async () => {
+    const cachedMedia = getCachedMedia();
+    if (cachedMedia.length > 0) {
+      setAllMedia(cachedMedia);
+      
+      const cachedAlbumIds = [...new Set(cachedMedia.map(m => m.albumId).filter(Boolean))];
+      
+      if (cachedAlbumIds.length > 0) {
+        const { data: albumsData } = await supabase.from('albums').select('*').eq('deleted', false).order('created_at', { ascending: true });
+        if (albumsData) {
+          const albumsWithCovers = albumsData.map(album => {
+            const albumMedia = cachedMedia.filter(m => m.albumId === album.id);
+            const firstMedia = albumMedia.length > 0 ? albumMedia[0] : null;
+            return { id: album.id, name: album.name, description: album.description || '', coverUrl: firstMedia?.url || null, coverType: firstMedia?.type || null, createdAt: album.created_at, updatedAt: album.updated_at, createdBy: album.created_by, deleted: album.deleted };
+          });
+          setAlbums(albumsWithCovers);
+        }
+      }
+    }
+    
     try {
-      const cachedMedia = getCachedMedia();
-      if (cachedMedia.length > 0) {
-        setAllMedia(cachedMedia);
-        
-        const cachedAlbums = cachedMedia.reduce((acc, m) => {
-          if (m.albumId && !acc.includes(m.albumId)) acc.push(m.albumId);
-          return acc;
-        }, [] as string[]);
-        
-        if (cachedAlbums.length > 0) {
-          const { data: albumsData } = await supabase.from('albums').select('*').eq('deleted', false).order('created_at', { ascending: true });
-          if (albumsData) {
-            const albumsWithCovers = albumsData.map(album => {
-              const albumMedia = cachedMedia.filter(m => m.albumId === album.id);
-              const firstMedia = albumMedia.length > 0 ? albumMedia[0] : null;
-              return {
-                id: album.id,
-                name: album.name,
-                description: album.description || '',
-                coverUrl: firstMedia?.url || null,
-                coverType: firstMedia?.type || null,
-                createdAt: album.created_at,
-                updatedAt: album.updated_at,
-                createdBy: album.created_by,
-                deleted: album.deleted
-              };
-            });
-            setAlbums(albumsWithCovers);
+      const { data: albumsData, error: albumsError } = await supabase.from('albums').select('*').eq('deleted', false).order('created_at', { ascending: true });
+      if (albumsError) throw albumsError;
+
+      const { data: mediaData, error: mediaError } = await supabase.from('media').select('*').eq('deleted', false).order('created_at', { ascending: true });
+      if (mediaError) throw mediaError;
+
+      const newMedia: Media[] = [];
+      for (const item of (mediaData || [])) {
+        const cached = cachedMedia.find(m => m.id === item.id);
+        if (cached?.url) {
+          newMedia.push(cached);
+        } else {
+          try {
+            const { data: { signedUrl } } = await supabase.storage.from('media').createSignedUrl(item.path, 31536000);
+            newMedia.push({ id: item.id, albumId: item.album_id, path: item.path, name: item.name, type: item.type, size: item.size, createdAt: item.created_at, createdBy: item.created_by, deleted: item.deleted, url: signedUrl || '' });
+          } catch {
+            newMedia.push({ id: item.id, albumId: item.album_id, path: item.path, name: item.name, type: item.type, size: item.size, createdAt: item.created_at, createdBy: item.created_by, deleted: item.deleted, url: '' });
           }
         }
       }
 
-      const { data: albumsData, error: albumsError } = await supabase
-        .from('albums')
-        .select('*')
-        .eq('deleted', false)
-        .order('created_at', { ascending: true });
+      setAllMedia(newMedia);
+      setCachedMedia(newMedia);
 
-      if (albumsError) throw albumsError;
-
-      const { data: mediaData, error: mediaError } = await supabase
-        .from('media')
-        .select('*')
-        .eq('deleted', false)
-        .order('created_at', { ascending: true });
-
-      if (mediaError) throw mediaError;
-
-      const mediaWithUrls = await Promise.all(
-        (mediaData || []).map(async (item) => {
-          const cached = cachedMedia.find(m => m.id === item.id);
-          let url = cached?.url || '';
-          
-          if (!url) {
-            const { data: { signedUrl } } = await supabase.storage
-              .from('media')
-              .createSignedUrl(item.path, 31536000);
-            url = signedUrl || '';
-          }
-          
-          return {
-            id: item.id,
-            albumId: item.album_id,
-            path: item.path,
-            name: item.name,
-            type: item.type,
-            size: item.size,
-            createdAt: item.created_at,
-            createdBy: item.created_by,
-            deleted: item.deleted,
-            url
-          };
-        })
-      );
-
-      setAllMedia(mediaWithUrls);
-      setCachedMedia(mediaWithUrls);
-
-      const albumsWithCovers = await Promise.all(
-        (albumsData || []).map(async (album) => {
-          const albumMedia = mediaWithUrls.filter(m => m.albumId === album.id);
-          const firstMedia = albumMedia.length > 0 ? albumMedia[0] : null;
-          return {
-            id: album.id,
-            name: album.name,
-            description: album.description || '',
-            coverUrl: firstMedia?.url || null,
-            coverType: firstMedia?.type || null,
-            createdAt: album.created_at,
-            updatedAt: album.updated_at,
-            createdBy: album.created_by,
-            deleted: album.deleted
-          };
-        })
-      );
+      const albumsWithCovers = (albumsData || []).map(album => {
+        const albumMedia = newMedia.filter(m => m.albumId === album.id);
+        const firstMedia = albumMedia.length > 0 ? albumMedia[0] : null;
+        return { id: album.id, name: album.name, description: album.description || '', coverUrl: firstMedia?.url || null, coverType: firstMedia?.type || null, createdAt: album.created_at, updatedAt: album.updated_at, createdBy: album.created_by, deleted: album.deleted };
+      });
 
       setAlbums(albumsWithCovers);
     } catch (error) {
       console.error("Error loading data:", error);
-      toast.error("Error al cargar los datos");
     } finally {
       setLoading(false);
     }

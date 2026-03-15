@@ -176,14 +176,15 @@ export default function AlbumView() {
   };
 
   const loadMedia = async () => {
+    const cachedMedia = getCachedMedia();
+    const albumCachedMedia = cachedMedia.filter(m => m.albumId === id);
+    
+    if (albumCachedMedia.length > 0) {
+      setMedia(albumCachedMedia);
+      setLoading(false);
+    }
+    
     try {
-      const cachedMedia = getCachedMedia();
-      const albumCachedMedia = cachedMedia.filter(m => m.albumId === id);
-      
-      if (albumCachedMedia.length > 0) {
-        setMedia(albumCachedMedia);
-      }
-
       const { data, error } = await supabase
         .from('media')
         .select('*')
@@ -193,41 +194,28 @@ export default function AlbumView() {
 
       if (error) throw error;
 
-      const mediaWithUrls = await Promise.all(
-        (data || []).map(async (item) => {
-          const cached = albumCachedMedia.find(m => m.id === item.id);
-          let url = cached?.url || '';
-          
-          if (!url) {
-            const { data: { signedUrl } } = await supabase.storage
-              .from('media')
-              .createSignedUrl(item.path, 31536000);
-            url = signedUrl || '';
+      const newMedia: Media[] = [];
+      for (const item of (data || [])) {
+        const cached = albumCachedMedia.find(m => m.id === item.id);
+        if (cached?.url) {
+          newMedia.push(cached);
+        } else {
+          try {
+            const { data: { signedUrl } } = await supabase.storage.from('media').createSignedUrl(item.path, 31536000);
+            newMedia.push({ id: item.id, albumId: item.album_id, path: item.path, name: item.name, type: item.type, size: item.size, createdAt: item.created_at, createdBy: item.created_by, deleted: item.deleted, url: signedUrl || '' });
+          } catch {
+            newMedia.push({ id: item.id, albumId: item.album_id, path: item.path, name: item.name, type: item.type, size: item.size, createdAt: item.created_at, createdBy: item.created_by, deleted: item.deleted, url: '' });
           }
-          
-          return {
-            id: item.id,
-            albumId: item.album_id,
-            path: item.path,
-            name: item.name,
-            type: item.type,
-            size: item.size,
-            createdAt: item.created_at,
-            createdBy: item.created_by,
-            deleted: item.deleted,
-            url
-          };
-        })
-      );
+        }
+      }
 
-      setMedia(mediaWithUrls);
+      setMedia(newMedia);
       
       const allCached = getCachedMedia();
-      const updatedCache = [...allCached.filter(m => m.albumId !== id), ...mediaWithUrls];
+      const updatedCache = [...allCached.filter(m => m.albumId !== id), ...newMedia];
       setCachedMedia(updatedCache);
     } catch (error) {
       console.error("Error loading media:", error);
-      toast.error("Error al cargar las fotos");
     } finally {
       setLoading(false);
     }
