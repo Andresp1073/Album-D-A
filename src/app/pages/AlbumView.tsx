@@ -320,7 +320,6 @@ export default function AlbumView() {
       toast.success(`${files.length} ${files.length === 1 ? 'archivo subido' : 'archivos subidos'}`);
       
       localStorage.removeItem('gallery_media_cache');
-      setMedia([]);
       loadMedia();
     } catch (error) {
       console.error("Error uploading files:", error);
@@ -355,7 +354,6 @@ export default function AlbumView() {
       setDeleteDialogOpen(false);
       setSelectedMedia(null);
       localStorage.removeItem('gallery_media_cache');
-      setMedia([]);
       loadMedia();
     } catch (error) {
       console.error("Error deleting media:", error);
