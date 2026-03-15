@@ -53,7 +53,11 @@ function FullscreenViewer({ media, initialIndex, onClose, onRestore, onDelete }:
   };
 
   const current = media[index];
-  const isVideo = current?.type.startsWith("video/");
+  const isVideo = current?.type?.startsWith("video/");
+
+  if (!current || !current.url) {
+    return null;
+  }
 
   return (
     <motion.div
@@ -250,6 +254,7 @@ export default function Trash() {
       toast.success("Elemento restaurado exitosamente");
       setRestoreItemDialogOpen(false);
       setSelectedItem(null);
+      setViewerOpen(false);
       loadTrash();
     } catch (error) {
       console.error("Error restoring item:", error);
@@ -330,6 +335,7 @@ export default function Trash() {
       toast.success("Elemento eliminado permanentemente");
       setDeleteItemDialogOpen(false);
       setSelectedItem(null);
+      setViewerOpen(false);
       loadTrash();
     } catch (error) {
       console.error("Error deleting item permanently:", error);
