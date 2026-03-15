@@ -14,7 +14,8 @@ export default function Trash() {
   const [emptyTrashDialogOpen, setEmptyTrashDialogOpen] = useState(false);
   const [restoreAllDialogOpen, setRestoreAllDialogOpen] = useState(false);
   const [deleteItemDialogOpen, setDeleteItemDialogOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<{ type: string; id: string; albumId?: string } | null>(null);
+  const [restoreItemDialogOpen, setRestoreItemDialogOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<{ type: string; id: string; albumId?: string; name?: string } | null>(null);
 
   useEffect(() => {
     loadTrash();
@@ -84,8 +85,12 @@ export default function Trash() {
     }
   };
 
-  const handleRestoreItem = async (type: string, id: string, albumId?: string) => {
+  const handleRestoreItem = async () => {
+    if (!selectedItem) return;
+
     try {
+      const { type, id, albumId } = selectedItem;
+
       if (type === 'album') {
         const { error } = await supabase
           .from('albums')
@@ -101,6 +106,8 @@ export default function Trash() {
       }
 
       toast.success("Elemento restaurado exitosamente");
+      setRestoreItemDialogOpen(false);
+      setSelectedItem(null);
       loadTrash();
     } catch (error) {
       console.error("Error restoring item:", error);
@@ -228,6 +235,11 @@ export default function Trash() {
     setDeleteItemDialogOpen(true);
   };
 
+  const openRestoreDialog = (type: string, id: string, albumId?: string, name?: string) => {
+    setSelectedItem({ type, id, albumId, name });
+    setRestoreItemDialogOpen(true);
+  };
+
   const totalItems = albums.length + media.length;
 
   if (loading) {
@@ -334,7 +346,7 @@ export default function Trash() {
                       <div className="flex gap-2 mt-4">
                         <Button
                           size="sm"
-                          onClick={() => handleRestoreItem("album", album.id)}
+                          onClick={() => openRestoreDialog("album", album.id, undefined, album.name)}
                           className="flex-1 gap-1 bg-green-600 hover:bg-green-700"
                         >
                           <RotateCcw className="w-3 h-3" />
@@ -391,7 +403,7 @@ export default function Trash() {
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-2">
                         <Button
                           size="sm"
-                          onClick={() => handleRestoreItem("media", item.id, item.albumId)}
+                          onClick={() => openRestoreDialog("media", item.id, item.albumId, item.name)}
                           className="bg-green-600 hover:bg-green-700 h-8 px-2"
                         >
                           <RotateCcw className="w-3 h-3" />
@@ -479,6 +491,27 @@ export default function Trash() {
               className="bg-red-600 hover:bg-red-700"
             >
               Eliminar permanentemente
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Restore Item Confirmation */}
+      <AlertDialog open={restoreItemDialogOpen} onOpenChange={setRestoreItemDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Restaurar elemento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Estás seguro de que quieres restaurar "{selectedItem?.name || 'este elemento'}"?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRestoreItem}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              Restaurar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

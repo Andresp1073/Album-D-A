@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 
 const MEDIA_CACHE_KEY = 'gallery_media_cache';
+const ALBUMS_CACHE_KEY = 'gallery_albums_cache';
 
 const getCachedMedia = (): Media[] => {
   try {
@@ -29,6 +30,23 @@ const setCachedMedia = (media: Media[]) => {
     localStorage.setItem(MEDIA_CACHE_KEY, JSON.stringify(media));
   } catch (e) {
     console.error('Error caching media:', e);
+  }
+};
+
+const getCachedAlbums = (): Album[] => {
+  try {
+    const cached = localStorage.getItem(ALBUMS_CACHE_KEY);
+    return cached ? JSON.parse(cached) : [];
+  } catch {
+    return [];
+  }
+};
+
+const setCachedAlbums = (albums: Album[]) => {
+  try {
+    localStorage.setItem(ALBUMS_CACHE_KEY, JSON.stringify(albums));
+  } catch (e) {
+    console.error('Error caching albums:', e);
   }
 };
 
@@ -155,22 +173,18 @@ export default function Dashboard() {
 
   const loadData = async () => {
     const cachedMedia = getCachedMedia();
+    const cachedAlbums = getCachedAlbums();
+    
     if (cachedMedia.length > 0) {
       setAllMedia(cachedMedia);
-      
-      const cachedAlbumIds = [...new Set(cachedMedia.map(m => m.albumId).filter(Boolean))];
-      
-      if (cachedAlbumIds.length > 0) {
-        const { data: albumsData } = await supabase.from('albums').select('*').eq('deleted', false).order('created_at', { ascending: true });
-        if (albumsData) {
-          const albumsWithCovers = albumsData.map(album => {
-            const albumMedia = cachedMedia.filter(m => m.albumId === album.id);
-            const firstMedia = albumMedia.length > 0 ? albumMedia[0] : null;
-            return { id: album.id, name: album.name, description: album.description || '', coverUrl: firstMedia?.url || null, coverType: firstMedia?.type || null, createdAt: album.created_at, updatedAt: album.updated_at, createdBy: album.created_by, deleted: album.deleted };
-          });
-          setAlbums(albumsWithCovers);
-        }
-      }
+    }
+    
+    if (cachedAlbums.length > 0) {
+      setAlbums(cachedAlbums);
+    }
+    
+    if (cachedMedia.length > 0 || cachedAlbums.length > 0) {
+      setLoading(false);
     }
     
     try {
@@ -195,16 +209,24 @@ export default function Dashboard() {
         }
       }
 
-      setAllMedia(newMedia);
-      setCachedMedia(newMedia);
-
       const albumsWithCovers = (albumsData || []).map(album => {
         const albumMedia = newMedia.filter(m => m.albumId === album.id);
         const firstMedia = albumMedia.length > 0 ? albumMedia[0] : null;
         return { id: album.id, name: album.name, description: album.description || '', coverUrl: firstMedia?.url || null, coverType: firstMedia?.type || null, createdAt: album.created_at, updatedAt: album.updated_at, createdBy: album.created_by, deleted: album.deleted };
       });
 
-      setAlbums(albumsWithCovers);
+      const mediaChanged = JSON.stringify(newMedia) !== JSON.stringify(cachedMedia);
+      const albumsChanged = JSON.stringify(albumsWithCovers) !== JSON.stringify(cachedAlbums);
+      
+      if (mediaChanged) {
+        setAllMedia(newMedia);
+        setCachedMedia(newMedia);
+      }
+      
+      if (albumsChanged) {
+        setAlbums(albumsWithCovers);
+        setCachedAlbums(albumsWithCovers);
+      }
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {
@@ -358,6 +380,20 @@ export default function Dashboard() {
                     ) : (
                       <img src={item.url} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                     )}
+                    <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-7 w-7 p-0 bg-black/50 hover:bg-red-600 text-white rounded-full"
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          setSelectedMedia(item); 
+                          setDeleteMediaDialogOpen(true); 
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </motion.div>
                 );
               })}
