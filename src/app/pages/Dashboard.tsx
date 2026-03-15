@@ -401,7 +401,9 @@ export default function Dashboard() {
                     ) : (
                       <img src={item.url} alt={item.name} loading="lazy" className="w-full h-full object-cover" />
                     )}
-                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    
+                    {/* Delete button - only on desktop hover */}
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10 hidden md:block">
                       <Button 
                         variant="destructive"
                         size="sm" 
@@ -414,6 +416,32 @@ export default function Dashboard() {
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
+                    </div>
+                    
+                    {/* Mobile: long press to delete */}
+                    <div 
+                      className="absolute inset-0 md:hidden"
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setSelectedMedia(item);
+                        setDeleteMediaDialogOpen(true);
+                      }}
+                    >
+                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 opacity-100">
+                        <Button 
+                          variant="destructive"
+                          size="sm" 
+                          className="h-8 w-8 p-0 bg-red-500/80 hover:bg-red-600"
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            setSelectedMedia(item); 
+                            setDeleteMediaDialogOpen(true); 
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   </Wrapper>
                 );
