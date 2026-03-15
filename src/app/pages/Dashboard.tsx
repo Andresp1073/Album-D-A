@@ -188,6 +188,7 @@ export default function Dashboard() {
       setSelectedMedia(null);
       setViewerOpen(false);
       localStorage.removeItem('gallery_media_cache');
+      setAllMedia([]);
       loadData();
     } catch (error) {
       console.error("Error deleting media:", error);
