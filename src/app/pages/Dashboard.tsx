@@ -431,22 +431,6 @@ export default function Dashboard() {
                     ) : (
                       <img src={item.url} alt={item.name} loading="lazy" className="w-full h-full object-cover" />
                     )}
-                    
-                    {/* Delete button - only on desktop */}
-                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10 hidden md:block">
-                      <Button 
-                        variant="destructive"
-                        size="sm" 
-                        className="h-8 w-8 p-0 bg-red-500/80 hover:bg-red-600"
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
-                          setSelectedMedia(item); 
-                          setDeleteMediaDialogOpen(true); 
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
                   </Wrapper>
                 );
               })}
