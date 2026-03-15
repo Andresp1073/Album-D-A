@@ -129,9 +129,6 @@ export default function Login() {
 
           {/* Footer */}
           <div className="mt-8 text-center">
-            <p className="text-xs text-gray-500">
-              🔒 Aplicación privada solo para usuarios autorizados
-            </p>
           </div>
         </div>
 

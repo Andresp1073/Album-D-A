@@ -447,18 +447,18 @@ export default function AlbumView() {
                 )}
 
                 {/* Delete button on hover */}
-                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                   <Button
                     variant="destructive"
                     size="sm"
-                    className="h-8 w-8 p-0 bg-red-500/80 hover:bg-red-600"
+                    className="h-10 w-10 p-0 rounded-full"
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedMedia(item);
                       setDeleteDialogOpen(true);
                     }}
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-5 h-5" />
                   </Button>
                 </div>
               </motion.div>
