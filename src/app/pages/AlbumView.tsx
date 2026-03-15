@@ -483,7 +483,7 @@ export default function AlbumView() {
                   />
                 )}
 
-                {/* Delete button - only on desktop hover, mobile uses long press */}
+                {/* Delete button - only on desktop */}
                 <div className="absolute bottom-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10 hidden md:block">
                   <Button
                     variant="destructive"
@@ -497,32 +497,6 @@ export default function AlbumView() {
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
-                </div>
-                
-                {/* Mobile: long press to delete */}
-                <div 
-                  className="absolute inset-0 md:hidden"
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setSelectedMedia(item);
-                    setDeleteDialogOpen(true);
-                  }}
-                >
-                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 opacity-100">
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="h-8 w-8 p-0 bg-red-500/80 hover:bg-red-600"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedMedia(item);
-                        setDeleteDialogOpen(true);
-                      }}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
                 </div>
               </Wrapper>
             );
