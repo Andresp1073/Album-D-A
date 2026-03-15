@@ -237,10 +237,10 @@ export default function Dashboard() {
     }
     
     try {
-      const { data: albumsData, error: albumsError } = await supabase.from('albums').select('*').eq('deleted', false).order('created_at', { ascending: false });
+      const { data: albumsData, error: albumsError } = await supabase.from('albums').select('*').eq('deleted', false).order('created_at', { ascending: true });
       if (albumsError) throw albumsError;
 
-      const { data: mediaData, error: mediaError } = await supabase.from('media').select('*').eq('deleted', false).order('created_at', { ascending: false });
+      const { data: mediaData, error: mediaError } = await supabase.from('media').select('*').eq('deleted', false).order('created_at', { ascending: true });
       if (mediaError) throw mediaError;
 
       const newMedia: Media[] = [];

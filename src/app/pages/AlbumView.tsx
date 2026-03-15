@@ -244,7 +244,7 @@ export default function AlbumView() {
         .select('*')
         .eq('album_id', id)
         .eq('deleted', false)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
 
       if (error) throw error;
 
