@@ -50,16 +50,28 @@ const setCachedAlbums = (albums: Album[]) => {
   }
 };
 
-function FullscreenViewer({ media, initialIndex, onClose, onDelete }: { media: Media[]; initialIndex: number; onClose: () => void; onDelete: (media: Media) => void }) {
+function FullscreenViewer({ media, initialIndex, onClose, onDelete, onIndexChange }: { media: Media[]; initialIndex: number; onClose: () => void; onDelete: (media: Media) => void; onIndexChange?: (index: number) => void }) {
   const [index, setIndex] = useState(initialIndex);
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
 
   useEffect(() => {
+    setIndex(initialIndex);
+  }, [initialIndex]);
+
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
-      else if (e.key === "ArrowLeft") setIndex(i => i > 0 ? i - 1 : media.length - 1);
-      else if (e.key === "ArrowRight") setIndex(i => i < media.length - 1 ? i + 1 : 0);
+      else if (e.key === "ArrowLeft") {
+        const newIndex = index > 0 ? index - 1 : media.length - 1;
+        setIndex(newIndex);
+        onIndexChange?.(newIndex);
+      }
+      else if (e.key === "ArrowRight") {
+        const newIndex = index < media.length - 1 ? index + 1 : 0;
+        setIndex(newIndex);
+        onIndexChange?.(newIndex);
+      }
     };
     window.addEventListener("keydown", handleKeyDown);
     document.body.style.overflow = "hidden";
@@ -67,7 +79,7 @@ function FullscreenViewer({ media, initialIndex, onClose, onDelete }: { media: M
       window.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "auto";
     };
-  }, [media.length, onClose]);
+  }, [media.length, onClose, index]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
@@ -80,11 +92,14 @@ function FullscreenViewer({ media, initialIndex, onClose, onDelete }: { media: M
   const handleTouchEnd = () => {
     const diff = touchStartX.current - touchEndX.current;
     if (Math.abs(diff) > 50) {
+      let newIndex: number;
       if (diff > 0) {
-        setIndex(i => i < media.length - 1 ? i + 1 : 0);
+        newIndex = index < media.length - 1 ? index + 1 : 0;
       } else {
-        setIndex(i => i > 0 ? i - 1 : media.length - 1);
+        newIndex = index > 0 ? index - 1 : media.length - 1;
       }
+      setIndex(newIndex);
+      onIndexChange?.(newIndex);
     }
   };
 
@@ -325,7 +340,7 @@ export default function Dashboard() {
     <div className="space-y-6">
       <AnimatePresence>
         {viewerOpen && (
-          <FullscreenViewer media={allMedia} initialIndex={viewerIndex} onClose={() => setViewerOpen(false)} onDelete={(media) => { setSelectedMedia(media); setDeleteMediaDialogOpen(true); }} />
+          <FullscreenViewer media={allMedia} initialIndex={viewerIndex} onClose={() => setViewerOpen(false)} onDelete={(media) => { setSelectedMedia(media); setDeleteMediaDialogOpen(true); }} onIndexChange={(index) => setViewerIndex(index)} />
         )}
       </AnimatePresence>
 

@@ -1,11 +1,94 @@
-import { useState, useEffect } from "react";
-import { Trash2, RotateCcw, AlertTriangle, Image as ImageIcon } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Trash2, RotateCcw, AlertTriangle, Image as ImageIcon, X, ChevronLeft, ChevronRight, Play } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../components/ui/alert-dialog";
 import { supabase } from "../../lib/supabase";
 import { Album, Media } from "../../types";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
+
+function FullscreenViewer({ media, initialIndex, onClose }: { media: Media[]; initialIndex: number; onClose: () => void }) {
+  const [index, setIndex] = useState(initialIndex);
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
+
+  useEffect(() => {
+    setIndex(initialIndex);
+  }, [initialIndex]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      else if (e.key === "ArrowLeft") setIndex(i => i > 0 ? i - 1 : media.length - 1);
+      else if (e.key === "ArrowRight") setIndex(i => i < media.length - 1 ? i + 1 : 0);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "auto";
+    };
+  }, [media.length, onClose, index]);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+  
+  const handleTouchEnd = () => {
+    const diff = touchStartX.current - touchEndX.current;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) {
+        setIndex(i => i < media.length - 1 ? i + 1 : 0);
+      } else {
+        setIndex(i => i > 0 ? i - 1 : media.length - 1);
+      }
+    }
+  };
+
+  const current = media[index];
+  const isVideo = current?.type.startsWith("video/");
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 bg-black flex items-center justify-center"
+      onClick={onClose}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      <button onClick={onClose} className="absolute top-4 right-4 z-20 p-2 text-white/80 hover:text-white transition-colors">
+        <X className="w-8 h-8" />
+      </button>
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 text-white font-medium bg-black/30 backdrop-blur-sm px-4 py-2 rounded-full text-sm">
+        {index + 1} / {media.length}
+      </div>
+      {media.length > 1 && (
+        <>
+          <button onClick={(e) => { e.stopPropagation(); setIndex(i => i > 0 ? i - 1 : media.length - 1); }} className="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-3 text-white/70 hover:text-white transition-colors bg-black/20 hover:bg-black/40 rounded-full hidden md:flex">
+            <ChevronLeft className="w-8 h-8" />
+          </button>
+          <button onClick={(e) => { e.stopPropagation(); setIndex(i => i < media.length - 1 ? i + 1 : 0); }} className="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-3 text-white/70 hover:text-white transition-colors bg-black/20 hover:bg-black/40 rounded-full hidden md:flex">
+            <ChevronRight className="w-8 h-8" />
+          </button>
+        </>
+      )}
+      <div className="max-w-full max-h-full p-0 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+        {isVideo ? (
+          <video src={current.url} controls autoPlay className="max-w-full max-h-[90vh] object-contain" />
+        ) : (
+          <img src={current.url} alt={current.name} className="max-w-full max-h-[90vh] object-contain" />
+        )}
+      </div>
+    </motion.div>
+  );
+}
 
 export default function Trash() {
   const [albums, setAlbums] = useState<Album[]>([]);
@@ -16,6 +99,8 @@ export default function Trash() {
   const [deleteItemDialogOpen, setDeleteItemDialogOpen] = useState(false);
   const [restoreItemDialogOpen, setRestoreItemDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<{ type: string; id: string; albumId?: string; name?: string } | null>(null);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerIndex, setViewerIndex] = useState(0);
 
   useEffect(() => {
     loadTrash();
@@ -255,6 +340,12 @@ export default function Trash() {
 
   return (
     <div className="space-y-6">
+      <AnimatePresence>
+        {viewerOpen && (
+          <FullscreenViewer media={media} initialIndex={viewerIndex} onClose={() => setViewerOpen(false)} />
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
@@ -384,7 +475,8 @@ export default function Trash() {
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: index * 0.02 }}
-                      className="group relative aspect-square bg-gray-100 rounded-lg overflow-hidden"
+                      className="group relative aspect-square bg-gray-100 rounded-lg overflow-hidden cursor-pointer"
+                      onClick={() => { setViewerIndex(index); setViewerOpen(true); }}
                     >
                       {isVideo ? (
                         <video
@@ -403,7 +495,7 @@ export default function Trash() {
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-2">
                         <Button
                           size="sm"
-                          onClick={() => openRestoreDialog("media", item.id, item.albumId, item.name)}
+                          onClick={(e) => { e.stopPropagation(); openRestoreDialog("media", item.id, item.albumId, item.name); }}
                           className="bg-green-600 hover:bg-green-700 h-8 px-2"
                         >
                           <RotateCcw className="w-3 h-3" />
@@ -411,7 +503,7 @@ export default function Trash() {
                         <Button
                           size="sm"
                           variant="destructive"
-                          onClick={() => openDeleteDialog("media", item.id, item.albumId)}
+                          onClick={(e) => { e.stopPropagation(); openDeleteDialog("media", item.id, item.albumId); }}
                           className="h-8 px-2"
                         >
                           <Trash2 className="w-3 h-3" />
