@@ -123,12 +123,12 @@ function FullscreenViewer({ media, initialIndex, onClose, onDelete, onIndexChang
       <Button variant="ghost" size="sm" className="absolute top-4 right-4 z-20 text-white hover:bg-white/10" onClick={onClose}>
         <X className="w-6 h-6" />
       </Button>
-      <div className="absolute top-4 left-4 z-20">
-        <Button variant="ghost" size="sm" className="text-white hover:bg-white/10" onClick={() => setMenuOpen(!menuOpen)}>
+      <div className="absolute top-4 right-14 z-20">
+        <Button variant="ghost" size="sm" className="text-white hover:bg-white/10" onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); }}>
           <MoreVertical className="w-6 h-6" />
         </Button>
         {menuOpen && (
-          <div className="absolute right-0 mt-1 w-40 bg-gray-900/90 rounded-lg shadow-lg border border-gray-700 py-1">
+          <div className="absolute right-0 mt-1 w-40 bg-gray-900/90 rounded-lg shadow-lg border border-gray-700 py-1" onClick={(e) => e.stopPropagation()}>
             <button onClick={() => { setMenuOpen(false); onDelete(current); }} className="w-full text-left px-4 py-2 text-white hover:bg-red-600 flex items-center gap-2">
               <Trash2 className="w-4 h-4" />Eliminar
             </button>
@@ -445,6 +445,22 @@ export default function Dashboard() {
                     ) : (
                       <img src={item.url} alt={item.name} loading="lazy" className="w-full h-full object-cover" />
                     )}
+                    
+                    {/* Delete button on hover */}
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                      <Button 
+                        variant="destructive"
+                        size="sm" 
+                        className="h-8 w-8 p-0 bg-red-500/80 hover:bg-red-600"
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          setSelectedMedia(item); 
+                          setDeleteMediaDialogOpen(true); 
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </Wrapper>
                 );
               })}
