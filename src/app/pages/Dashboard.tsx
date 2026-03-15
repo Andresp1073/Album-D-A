@@ -187,9 +187,7 @@ export default function Dashboard() {
       setDeleteMediaDialogOpen(false);
       setSelectedMedia(null);
       setViewerOpen(false);
-      localStorage.removeItem('gallery_media_cache');
-      setAllMedia([]);
-      loadData();
+      loadData(true);
     } catch (error) {
       console.error("Error deleting media:", error);
       toast.error("Error al eliminar la foto");
@@ -200,11 +198,11 @@ export default function Dashboard() {
     loadData();
   }, []);
 
-  const loadData = async () => {
+  const loadData = async (skipCache = false) => {
     const cachedMedia = getCachedMedia();
     const cachedAlbums = getCachedAlbums();
     
-    if (cachedMedia.length > 0) {
+    if (!skipCache && cachedMedia.length > 0) {
       const mediaWithOffline = await Promise.all(
         cachedMedia.map(async (item) => {
           const offlineUrl = await getCachedImage(item.id);
@@ -217,7 +215,7 @@ export default function Dashboard() {
       setAllMedia(mediaWithOffline);
     }
     
-    if (cachedAlbums.length > 0) {
+    if (!skipCache && cachedAlbums.length > 0) {
       const albumsWithOffline = await Promise.all(
         cachedAlbums.map(async (album) => {
           const offlineUrl = await getCachedImage(album.id);
@@ -364,9 +362,7 @@ export default function Dashboard() {
       setDeleteDialogOpen(false);
       setSelectedAlbum(null);
       
-      localStorage.removeItem('gallery_albums_cache');
-      localStorage.removeItem('gallery_media_cache');
-      loadData();
+      loadData(true);
     } catch (error) {
       console.error("Error deleting album:", error);
       toast.error("Error al eliminar el álbum: " + (error as Error).message);

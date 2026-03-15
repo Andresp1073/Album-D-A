@@ -219,11 +219,11 @@ export default function AlbumView() {
     }
   };
 
-  const loadMedia = async () => {
+  const loadMedia = async (skipCache = false) => {
     const cachedMedia = getCachedMedia();
     const albumCachedMedia = cachedMedia.filter(m => m.albumId === id);
     
-    if (albumCachedMedia.length > 0) {
+    if (!skipCache && albumCachedMedia.length > 0) {
       const mediaWithOffline = await Promise.all(
         albumCachedMedia.map(async (item) => {
           const offlineUrl = await getCachedImage(item.id);
@@ -319,9 +319,7 @@ export default function AlbumView() {
 
       toast.success(`${files.length} ${files.length === 1 ? 'archivo subido' : 'archivos subidos'}`);
       
-      localStorage.removeItem('gallery_media_cache');
-      setMedia([]);
-      loadMedia();
+      loadMedia(true);
     } catch (error) {
       console.error("Error uploading files:", error);
       toast.error("Error al subir archivos");
