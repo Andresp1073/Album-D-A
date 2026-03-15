@@ -13,6 +13,25 @@ import { Album, Media } from "../../types";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 
+const MEDIA_CACHE_KEY = 'gallery_media_cache';
+
+const getCachedMedia = (): Media[] => {
+  try {
+    const cached = localStorage.getItem(MEDIA_CACHE_KEY);
+    return cached ? JSON.parse(cached) : [];
+  } catch {
+    return [];
+  }
+};
+
+const setCachedMedia = (media: Media[]) => {
+  try {
+    localStorage.setItem(MEDIA_CACHE_KEY, JSON.stringify(media));
+  } catch (e) {
+    console.error('Error caching media:', e);
+  }
+};
+
 function FullscreenViewer({ media, initialIndex, onClose, onDelete }: { media: Media[]; initialIndex: number; onClose: () => void; onDelete: (media: Media) => void }) {
   const [index, setIndex] = useState(initialIndex);
   const touchStartX = useRef(0);
@@ -139,6 +158,38 @@ export default function Dashboard() {
 
   const loadData = async () => {
     try {
+      const cachedMedia = getCachedMedia();
+      if (cachedMedia.length > 0) {
+        setAllMedia(cachedMedia);
+        
+        const cachedAlbums = cachedMedia.reduce((acc, m) => {
+          if (m.albumId && !acc.includes(m.albumId)) acc.push(m.albumId);
+          return acc;
+        }, [] as string[]);
+        
+        if (cachedAlbums.length > 0) {
+          const { data: albumsData } = await supabase.from('albums').select('*').eq('deleted', false).order('created_at', { ascending: true });
+          if (albumsData) {
+            const albumsWithCovers = albumsData.map(album => {
+              const albumMedia = cachedMedia.filter(m => m.albumId === album.id);
+              const firstMedia = albumMedia.length > 0 ? albumMedia[0] : null;
+              return {
+                id: album.id,
+                name: album.name,
+                description: album.description || '',
+                coverUrl: firstMedia?.url || null,
+                coverType: firstMedia?.type || null,
+                createdAt: album.created_at,
+                updatedAt: album.updated_at,
+                createdBy: album.created_by,
+                deleted: album.deleted
+              };
+            });
+            setAlbums(albumsWithCovers);
+          }
+        }
+      }
+
       const { data: albumsData, error: albumsError } = await supabase
         .from('albums')
         .select('*')
@@ -157,9 +208,15 @@ export default function Dashboard() {
 
       const mediaWithUrls = await Promise.all(
         (mediaData || []).map(async (item) => {
-          const { data: { signedUrl } } = await supabase.storage
-            .from('media')
-            .createSignedUrl(item.path, 31536000);
+          const cached = cachedMedia.find(m => m.id === item.id);
+          let url = cached?.url || '';
+          
+          if (!url) {
+            const { data: { signedUrl } } = await supabase.storage
+              .from('media')
+              .createSignedUrl(item.path, 31536000);
+            url = signedUrl || '';
+          }
           
           return {
             id: item.id,
@@ -171,12 +228,13 @@ export default function Dashboard() {
             createdAt: item.created_at,
             createdBy: item.created_by,
             deleted: item.deleted,
-            url: signedUrl || ''
+            url
           };
         })
       );
 
       setAllMedia(mediaWithUrls);
+      setCachedMedia(mediaWithUrls);
 
       const albumsWithCovers = await Promise.all(
         (albumsData || []).map(async (album) => {

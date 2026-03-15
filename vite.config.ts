@@ -40,6 +40,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/pvjhokgkgjqvbvnayjdt\.supabase\.co\/storage\/v1\/object\/media\//,
@@ -47,8 +48,8 @@ export default defineConfig({
             options: {
               cacheName: 'media-cache',
               expiration: {
-                maxEntries: 500,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+                maxEntries: 1000,
+                maxAgeSeconds: 60 * 60 * 24 * 365
               },
               cacheableResponse: {
                 statuses: [0, 200]
@@ -62,7 +63,7 @@ export default defineConfig({
               cacheName: 'api-cache',
               expiration: {
                 maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 // 1 day
+                maxAgeSeconds: 60 * 60 * 24
               },
               cacheableResponse: {
                 statuses: [0, 200]

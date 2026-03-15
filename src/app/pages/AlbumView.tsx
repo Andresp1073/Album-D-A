@@ -8,6 +8,25 @@ import { Album, Media } from "../../types";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 
+const MEDIA_CACHE_KEY = 'gallery_media_cache';
+
+const getCachedMedia = (): Media[] => {
+  try {
+    const cached = localStorage.getItem(MEDIA_CACHE_KEY);
+    return cached ? JSON.parse(cached) : [];
+  } catch {
+    return [];
+  }
+};
+
+const setCachedMedia = (media: Media[]) => {
+  try {
+    localStorage.setItem(MEDIA_CACHE_KEY, JSON.stringify(media));
+  } catch (e) {
+    console.error('Error caching media:', e);
+  }
+};
+
 function FullscreenViewer({ media, initialIndex, onClose }: { media: Media[]; initialIndex: number; onClose: () => void }) {
   const [index, setIndex] = useState(initialIndex);
 
@@ -148,6 +167,13 @@ export default function AlbumView() {
 
   const loadMedia = async () => {
     try {
+      const cachedMedia = getCachedMedia();
+      const albumCachedMedia = cachedMedia.filter(m => m.albumId === id);
+      
+      if (albumCachedMedia.length > 0) {
+        setMedia(albumCachedMedia);
+      }
+
       const { data, error } = await supabase
         .from('media')
         .select('*')
@@ -159,9 +185,15 @@ export default function AlbumView() {
 
       const mediaWithUrls = await Promise.all(
         (data || []).map(async (item) => {
-          const { data: { signedUrl } } = await supabase.storage
-            .from('media')
-            .createSignedUrl(item.path, 31536000);
+          const cached = albumCachedMedia.find(m => m.id === item.id);
+          let url = cached?.url || '';
+          
+          if (!url) {
+            const { data: { signedUrl } } = await supabase.storage
+              .from('media')
+              .createSignedUrl(item.path, 31536000);
+            url = signedUrl || '';
+          }
           
           return {
             id: item.id,
@@ -173,12 +205,16 @@ export default function AlbumView() {
             createdAt: item.created_at,
             createdBy: item.created_by,
             deleted: item.deleted,
-            url: signedUrl || ''
+            url
           };
         })
       );
 
       setMedia(mediaWithUrls);
+      
+      const allCached = getCachedMedia();
+      const updatedCache = [...allCached.filter(m => m.albumId !== id), ...mediaWithUrls];
+      setCachedMedia(updatedCache);
     } catch (error) {
       console.error("Error loading media:", error);
       toast.error("Error al cargar las fotos");

@@ -1,1 +1,51 @@
-if(!self.define){let s,e={};const n=(n,i)=>(n=new URL(n+".js",i).href,e[n]||new Promise(e=>{if("document"in self){const s=document.createElement("script");s.src=n,s.onload=e,document.head.appendChild(s)}else s=n,importScripts(n),e()}).then(()=>{let s=e[n];if(!s)throw new Error(`Module ${n} didn’t register its module`);return s}));self.define=(i,l)=>{const r=s||("document"in self?document.currentScript.src:"")||location.href;if(e[r])return;let t={};const u=s=>n(s,r),o={module:{uri:r},exports:t,require:u};e[r]=Promise.all(i.map(s=>o[s]||u(s))).then(s=>(l(...s),t))}}define(["./workbox-26754b74"],function(s){"use strict";self.skipWaiting(),s.clientsClaim(),s.precacheAndRoute([{url:"registerSW.js",revision:"1872c500de691dce40960bb85481de07"},{url:"index.html",revision:"70f1c2720fc6a46c2904f5d56ddc08dc"},{url:"icon.svg",revision:"3770fef6f23d520ba982a19d31c3d7ea"},{url:"assets/index-rKLRJkkK.js",revision:null},{url:"assets/index-KWw_-dN5.js",revision:null},{url:"assets/index-iCcAHCGE.css",revision:null},{url:"assets/index-DydInt1x.js",revision:null},{url:"assets/index-DWa7SfyE.css",revision:null},{url:"assets/index-DJAMZmh8.js",revision:null},{url:"assets/index-DfNxqDIW.js",revision:null},{url:"assets/index-CPAOblNo.js",revision:null},{url:"assets/index-CNgip18U.css",revision:null},{url:"assets/index-Cl2-w6Or.css",revision:null},{url:"assets/index-CIOfN9pI.js",revision:null},{url:"assets/index-C0cnijFs.js",revision:null},{url:"assets/index-BlbCITL3.js",revision:null},{url:"assets/index-Bkq4LyLS.js",revision:null},{url:"assets/index-Bkb8URzZ.js",revision:null},{url:"assets/index-BH6VCW7v.js",revision:null},{url:"assets/index-BCR16DoN.css",revision:null},{url:"assets/index-BaoaBY9V.css",revision:null},{url:"assets/index-apjso3hI.js",revision:null},{url:"assets/index-25LXD_N3.css",revision:null},{url:"manifest.webmanifest",revision:"8ff28e451894796d6a452c47882f6587"}],{}),s.cleanupOutdatedCaches(),s.registerRoute(new s.NavigationRoute(s.createHandlerBoundToURL("index.html"))),s.registerRoute(/^https:\/\/pvjhokgkgjqvbvnayjdt\.supabase\.co\/storage\/v1\/object\/media\//,new s.CacheFirst({cacheName:"media-cache",plugins:[new s.ExpirationPlugin({maxEntries:500,maxAgeSeconds:31536e3}),new s.CacheableResponsePlugin({statuses:[0,200]})]}),"GET"),s.registerRoute(/^https:\/\/pvjhokgkgjqvbvnayjdt\.supabase\.co\/rest\/v1\//,new s.NetworkFirst({cacheName:"api-cache",plugins:[new s.ExpirationPlugin({maxEntries:100,maxAgeSeconds:86400}),new s.CacheableResponsePlugin({statuses:[0,200]})]}),"GET")});
+const CACHE_NAME = 'nuestros-momentos-v1';
+const urlsToCache = [
+  '/',
+  '/manifest.json',
+];
+
+// Install event
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(urlsToCache);
+    })
+  );
+  self.skipWaiting();
+});
+
+// Activate event
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+  self.clients.claim();
+});
+
+// Fetch event - Network first, fallback to cache
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    fetch(event.request)
+      .then((response) => {
+        // Clone the response
+        const responseToCache = response.clone();
+        
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(event.request, responseToCache);
+        });
+        
+        return response;
+      })
+      .catch(() => {
+        return caches.match(event.request);
+      })
+  );
+});
