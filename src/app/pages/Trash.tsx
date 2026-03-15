@@ -552,25 +552,6 @@ export default function Trash() {
                           className="w-full h-full object-cover opacity-60"
                         />
                       )}
-
-                      {/* Overlay with actions */}
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity flex items-center justify-center gap-2 p-2 md:opacity-0">
-                        <Button
-                          size="sm"
-                          onClick={(e) => { e.stopPropagation(); openRestoreDialog("media", item.id, item.albumId, item.name); }}
-                          className="bg-green-600 hover:bg-green-700 h-8 px-2"
-                        >
-                          <RotateCcw className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={(e) => { e.stopPropagation(); openDeleteDialog("media", item.id, item.albumId); }}
-                          className="h-8 px-2"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </div>
                     </Wrapper>
                   );
                 })}
