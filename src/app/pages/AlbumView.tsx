@@ -119,7 +119,7 @@ function FullscreenViewer({ media, initialIndex, onClose, onDelete, onIndexChang
         </button>
         {menuOpen && (
           <div className="absolute right-0 mt-1 w-40 bg-gray-900/90 rounded-lg shadow-lg border border-gray-700 py-1" onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => { setMenuOpen(false); onDelete(current); }} className="w-full text-left px-4 py-2 text-white hover:bg-red-600 flex items-center gap-2">
+            <button onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onDelete(current); }} className="w-full text-left px-4 py-2 text-white hover:bg-red-600 flex items-center gap-2">
               <Trash2 className="w-4 h-4" />Eliminar
             </button>
           </div>
