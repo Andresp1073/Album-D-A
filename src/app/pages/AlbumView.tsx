@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router";
-import { ArrowLeft, Upload, Image as ImageIcon, Play, Trash2, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, Upload, Image as ImageIcon, Play, Trash2, X, ChevronLeft, ChevronRight, MoreVertical } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../components/ui/alert-dialog";
 import { supabase } from "../../lib/supabase";
@@ -41,6 +41,7 @@ const setCachedMedia = (media: Media[]) => {
 
 function FullscreenViewer({ media, initialIndex, onClose, onDelete, onIndexChange }: { media: Media[]; initialIndex: number; onClose: () => void; onDelete: (media: Media) => void; onIndexChange?: (index: number) => void }) {
   const [index, setIndex] = useState(initialIndex);
+  const [menuOpen, setMenuOpen] = useState(false);
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
 
@@ -110,6 +111,20 @@ function FullscreenViewer({ media, initialIndex, onClose, onDelete, onIndexChang
       <button onClick={onClose} className="absolute top-4 right-4 z-20 p-2 text-white/80 hover:text-white transition-colors">
         <X className="w-8 h-8" />
       </button>
+      
+      {/* Menu button */}
+      <div className="absolute top-4 left-4 z-20">
+        <button onClick={() => setMenuOpen(!menuOpen)} className="p-2 text-white/80 hover:text-white transition-colors">
+          <MoreVertical className="w-6 h-6" />
+        </button>
+        {menuOpen && (
+          <div className="absolute left-0 mt-1 w-40 bg-gray-900/90 rounded-lg shadow-lg border border-gray-700 py-1">
+            <button onClick={() => { setMenuOpen(false); onDelete(current); }} className="w-full text-left px-4 py-2 text-white hover:bg-red-600 flex items-center gap-2">
+              <Trash2 className="w-4 h-4" />Eliminar
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Counter */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 text-white font-medium bg-black/30 backdrop-blur-sm px-4 py-2 rounded-full text-sm">
@@ -141,16 +156,6 @@ function FullscreenViewer({ media, initialIndex, onClose, onDelete, onIndexChang
         ) : (
           <img src={current.url} alt={current.name} className="max-w-full max-h-[90vh] object-contain" />
         )}
-      </div>
-
-      {/* Delete button */}
-      <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-20">
-        <button 
-          onClick={(e) => { e.stopPropagation(); onDelete(current); }} 
-          className="p-3 bg-red-600 hover:bg-red-700 rounded-full text-white flex items-center gap-2"
-        >
-          <Trash2 className="w-6 h-6" />
-        </button>
       </div>
     </motion.div>
   );
