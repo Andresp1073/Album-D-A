@@ -125,11 +125,6 @@ function FullscreenViewer({ media, initialIndex, onClose, onDelete }: { media: M
           <Trash2 className="w-6 h-6" />
         </button>
       </div>
-
-      {/* Name */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white text-center bg-black/30 backdrop-blur-sm px-4 py-2 rounded-full text-sm max-w-md truncate">
-        {current.name}
-      </div>
     </motion.div>
   );
 }
