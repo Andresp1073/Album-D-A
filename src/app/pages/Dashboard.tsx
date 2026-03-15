@@ -373,18 +373,18 @@ export default function Dashboard() {
                     {isVideo ? (
                       <div className="relative w-full h-full">
                         <video src={item.url} className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                          <Play className="w-12 h-12 text-white drop-shadow-lg" />
+                        <div className="absolute inset-0 bg-black/20 flex items-center justify-center group-hover:bg-black/40 transition-colors">
+                          <Play className="w-12 h-12 text-white drop-shadow-lg opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
                       </div>
                     ) : (
                       <img src={item.url} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                     )}
-                    <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                       <Button 
-                        variant="ghost" 
+                        variant="destructive"
                         size="sm" 
-                        className="h-7 w-7 p-0 bg-black/50 hover:bg-red-600 text-white rounded-full"
+                        className="h-8 w-8 p-0 bg-red-500/80 hover:bg-red-600"
                         onClick={(e) => { 
                           e.stopPropagation(); 
                           setSelectedMedia(item); 
